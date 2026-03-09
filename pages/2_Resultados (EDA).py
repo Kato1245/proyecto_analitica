@@ -16,35 +16,23 @@ Al finalizar, puedes previsualizar tu reporte consolidado.
 
 st.divider()
 
-# --- Formulario de Resultados ---
+# --- Resultados del Análisis ---
 with st.container():
    st.header("🔍 1. Identificación y Contexto")
-   contexto = st.text_area(
-       "¿De qué se trata el dataset? (Deducción del origen, tema y propósito)",
-       placeholder="Ej: El dataset trata sobre accidentes de tránsito en Antioquia durante el año 2023...",
-       height=150
-   )
+   contexto = "El dataset 'Overwatch League Stats Lab' recopila información detallada sobre partidas competitivas de Overwatch a nivel profesional, incluyendo métricas de rendimiento de jugadores, tiempos de inicio de rondas y estadísticas por mapa. Su propósito es permitir el análisis profundo de la estrategia y evolución técnica de la liga profesional de eSports."
+   st.info(contexto)
 
    st.header("❗ 2. Calidad de los Datos")
-   calidad = st.text_area(
-       "¿Qué encontraste sobre los datos faltantes y la limpieza?",
-       placeholder="Ej: Se observó que la columna 'Causa' tiene un 20% de nulos, lo cual podría sesgar...",
-       height=150
-   )
+   calidad = "Se observa un dataset con un gran volumen de registros pero con desafíos en la serialización de tipos. Columnas como 'round_start_time' presentan tipos mixtos que requieren una limpieza previa (conversión a datetime y limpieza de strings) para su correcto procesamiento en herramientas de analítica moderna como PyArrow y Streamlit."
+   st.warning(calidad)
 
    st.header("📈 3. Hallazgos Estadísticos Key")
-   estadisticas = st.text_area(
-       "Interpretación de los números y categorías principales (Medias, modas, etc.)",
-       placeholder="Ej: La mayoría de incidentes ocurren en el municipio de Medellín (Moda) con un promedio diario de...",
-       height=150
-   )
+   estadisticas = "Con miles de registros analizados, los hallazgos muestran una alta frecuencia de eventos en mapas específicos de Control y Escolta. La distribución de los tiempos de inicio de ronda sugiere una programación densa de partidas, con una variabilidad significativa que refleja el dinamismo de los encuentros competitivos."
+   st.success(estadisticas)
 
    st.header("💡 4. Conclusión Final")
-   conclusion = st.text_area(
-       "¿Cuál es el mensaje principal que nos dan estos datos?",
-       placeholder="Ej: El dataset revela una alta concentración de eventos en áreas urbanas...",
-       height=100
-   )
+   conclusion = "El análisis revela que la analítica en eSports es una herramienta poderosa para entender el balance competitivo. Estos datos permiten identificar patrones ganadores y tendencias de juego que son fundamentales tanto para los equipos profesionales como para los desarrolladores en la toma de decisiones basada en evidencia."
+   st.success(conclusion)
 
 st.divider()
 
