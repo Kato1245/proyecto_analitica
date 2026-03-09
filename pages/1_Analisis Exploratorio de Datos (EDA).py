@@ -143,7 +143,7 @@ if df is not None:
     + **🏷️ Variables**: El dataset contiene **{len(cat_cols)} llaves de texto** que definen el 'qué' y el 'dónde', y **{len(num_cols)} llaves numéricas** cuantificando el 'cuánto'.
     + **📍 Contexto Sugerido**: Las columnas como '{", ".join(cat_cols[:3])}...' sugieren que estamos analizando un fenómeno relacionado con la gestión, reportes o eventos en un entorno específico.
 
-    **¿Lograste identificar de qué se trata exactamente el dataset?**
+    
     """)
 
 else:
