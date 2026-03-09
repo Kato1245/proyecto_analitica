@@ -33,14 +33,14 @@ col1, col2 = st.columns([2, 1])
 with col1:
     st.header("📖 Introducción")
     st.write("""
-Este proyecto nace de la necesidad de aplicar técnicas avanzadas de **Analítica de Datos** para resolver problemas complejos en el mundo real.  
-A través de este tablero interactivo, exploraremos cómo la ciencia de datos puede revelar patrones ocultos, optimizar procesos y predecir tendencias futuras.
+Este proyecto aplica técnicas de **Analítica de Datos** para desglosar el rendimiento competitivo en la **Overwatch League**.  
+A través de este tablero, exploramos métricas de eSports para identificar cómo los equipos profesionales gestionan sus recursos, tiempos de ejecución y estrategias por mapa nacional e internacional.
 
-Nuestro enfoque se centra en la **Exploración de Datos (EDA)**, la limpieza de registros y la generación de conocimiento accionable a partir de fuentes de datos diversas.
+Nuestro enfoque utiliza la **Exploración de Datos (EDA)** para transformar registros técnicos de partidas en conocimiento estratégico sobre el "metajuego" profesional.
 """)
 
 with col2:
-    st.info("💡 **Dato Curioso:** El 80% del trabajo de un analista de datos se dedica a la limpieza y preparación de la información.")
+    st.info("💡 **Dato:** En la analítica de eSports, la precisión en los tiempos de ronda puede definir la victoria o derrota de una temporada completa.")
 
 # --- 2. Objetivos ---
 st.header("🎯 Objetivos del Proyecto")
@@ -50,16 +50,16 @@ obj_gen, obj_esp = st.columns(2)
 with obj_gen:
     st.subheader("Objetivo General")
     st.markdown("""
-- Desarrollar un ecosistema analítico integral que permita la carga, procesamiento y análisis técnico de grandes volúmenes de datos para la toma de decisiones.
+- Implementar un sistema de análisis exploratorio interactivo que identifique patrones de rendimiento y eficiencia en las estadísticas competitivas de la Overwatch League.
 """)
 
 with obj_esp:
     st.subheader("Objetivos Específicos")
     st.markdown("""
-- Implementar un módulo de **Análisis Exploratorio (EDA)** adaptable a cualquier dataset CSV.  
-- Fomentar el pensamiento crítico mediante actividades de "Detective de Datos".  
-- Automatizar la identificación de anomalías y valores faltantes en la información.  
-- Escalar el proyecto hacia modelos predictivos y visualizaciones avanzadas.
+- Identificar anomalías en los registros técnicos de las partidas para asegurar la calidad de los datos de rendimiento.
+- Analizar la frecuencia y éxito de los mapas competitivos para descifrar las tendencias de la liga.
+- Utilizar estadísticas descriptivas para comparar métricas clave de jugadores y equipos.
+- Evaluar la consistencia de los tiempos de ronda como indicador de equilibrio competitivo.
 """)
 
 st.divider()
