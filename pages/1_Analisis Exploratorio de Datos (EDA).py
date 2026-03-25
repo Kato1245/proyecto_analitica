@@ -1,150 +1,247 @@
-import streamlit as st
-import pandas as pd
-import kagglehub
+"""
+1_Analisis Exploratorio de Datos (EDA).py
+=========================================
+Página 1 del proyecto multipágina: "Detective de Datos"
+
+Responsabilidades (según plan):
+  - Carga de datos via utils/data_loader.py
+  - Vista inicial del dataset (head, shape, dtypes)
+  - Métricas de cardinalidad (nunique)
+  - value_counts interactivo por columna seleccionada
+  - Identificación y visualización de nulos
+  - Estadísticas descriptivas (numéricas y categóricas)
+"""
+
+import sys
 import os
 
-# Configuración de la página
-st.set_page_config(page_title="Actividad: Descubriendo los Datos", layout="wide")
+import streamlit as st
+import pandas as pd
 
-st.title(" Actividad: ¿De qué se tratan estos datos?")
-st.markdown("""
-### Objetivo de la Actividad
-Tu misión es actuar como un ***detective de datos***. A partir de las tablas y estadísticas que verás a continuación, debes deducir el contexto, el origen y el propósito de este conjunto de datos.
-""")
+# ── Hack de importación para módulos utils en Streamlit multipage ──────────
+# Streamlit ejecuta las páginas con el CWD del runner, no del archivo .py.
+# Añadir el directorio raíz del proyecto al path garantiza que 'utils' se encuentre.
+ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if ROOT_DIR not in sys.path:
+    sys.path.insert(0, ROOT_DIR)
 
-# --- Barra Lateral con Instrucciones ---
+from utils.data_loader import load_owl_data, get_dataset_info
+from utils.preprocessing import rename_columns_for_display
+
+# ── Configuración de página ────────────────────────────────────────────────
+st.set_page_config(
+    page_title="Análisis Exploratorio de Datos | OWL",
+    page_icon="🔍",
+    layout="wide",
+)
+
+st.title("🔍 Actividad: ¿De qué se tratan estos datos?")
+st.markdown(
+    """
+    ### Objetivo de la Actividad
+    Actúa como un **detective de datos**. A partir de las tablas y estadísticas de abajo,
+    deduce el contexto, el origen y el propósito del dataset de la **Overwatch League**.
+    """
+)
+
+# ── Barra Lateral: Guía del Estudiante ────────────────────────────────────
 with st.sidebar:
-    st.header(" Guía para el Estudiante")
-    st.info(""" 
-    1. ***Previsualiza***: Observa las primeras filas. ¿Hay nombres de ciudades, fechas o categorías conocidas?
-    2. ***Inspecciona***: Mira las dimensiones. ¿Es un dataset pequeño o masivo?
-    3. ***Analiza Limpieza***: ¿Faltan muchos datos? ¿En qué columnas?
-    4. ***Deduce***: Usa las estadísticas para entender el 'comportamiento' de los datos.
-    """)
-    st.warning(" A ***Prohibido usar gráficos***. El reto es entender los datos solo con números y texto.")
+    st.header("🧭 Guía para el Estudiante")
+    st.info(
+        """
+        1. **Previsualiza**: ¿Hay nombres de equipos, mapas o fechas?
+        2. **Inspecciona**: ¿Es un dataset pequeño o masivo?
+        3. **Analiza Limpieza**: ¿Faltan muchos datos? ¿En qué columnas?
+        4. **Deduce**: Usa las estadísticas para entender el "comportamiento" de los datos.
+        """
+    )
+    st.warning("⚠️ En esta etapa, **no usamos gráficos**. El reto es entender solo con números y texto.")
 
-# --- 1. Carga de Datos ---
-@st.cache_data
-def load_data():
-    try:
-        path = kagglehub.dataset_download("sherrytp/overwatch-league-stats-lab")
-        files = os.listdir(path)
+# ── Carga de Datos ─────────────────────────────────────────────────────────
+df = load_owl_data()
 
-        for file in files:
-            if file.endswith(".csv"):
-                return pd.read_csv(os.path.join(path, file))
+if df is None:
+    st.warning("⚠️ No se pudo cargar el dataset. Verifica tu conexión o la instalación de kagglehub.")
+    st.stop()
 
-        st.error("No se encontró ningún archivo CSV en el dataset.")
-        return None
+st.success("📂 Dataset cargado exitosamente.")
+info = get_dataset_info(df)
 
-    except Exception as e:
-        st.error(f"Error al cargar el dataset: {e}")
-        return None
+st.divider()
 
-# Cargar dataset automáticamente
-df = load_data()
+# ── STEP 1: Primer Impacto ─────────────────────────────────────────────────
+st.header("📂 Step 1: Primer Impacto (Dataset Preview)")
+st.markdown("Observa las **primeras 10 filas**. ¿Qué conceptos o palabras clave se repiten?")
+st.dataframe(rename_columns_for_display(df.head(10)), use_container_width=True)
 
-if df is not None:
-    st.success("📂 Dataset cargado para investigación.")
+with st.expander("🧠 ¿Cómo interpreto este paso?"):
+    st.write(
+        """
+        - **Nombres de columnas**: Son las 'etiquetas' de la información.
+          `map_name` → hay mapas. `match_id` → hay partidas identificables.
+        - **Valores iniciales**: ¿Son números, fechas o texto libre?
+        - **Identificadores**: Columnas como `match_id` o `game_number` son llaves únicas.
+        """
+    )
 
-    # --- Paso 1: Primer Impacto ---
-    st.header("Step 1: 📂 Primer Impacto (Dataset Preview)")
-    st.markdown("Observa las primeras filas. ¿Qué conceptos o palabras clave se repiten?")
-    st.dataframe(df.head(10))
+st.divider()
 
-    with st.expander("🧠 ¿Cómo interpretar este paso?"):
-        st.write("""
-        - **💡 Nombres de columnas:** Son las 'etiquetas' de la información. Si ves 'Municipio', sabes que hay datos geográficos. Si ves 'Fecha', hay una línea de tiempo.
-        - **🔍 Valores Iniciales:** Te dan una idea del formato. ¿Son números decimales, enteros, o texto largo?
-        - **🔑 Identificadores:** Busca columnas como 'ID' o 'Código', suelen ser llaves únicas para cada registro.
-        """)
+# ── STEP 2: Estructura ─────────────────────────────────────────────────────
+st.header("🏁 Step 2: La Estructura del Dataset")
 
-    # --- Paso 2: La Estructura ---
-    st.header("Step 2: 🏁 La Estructura")
-    col1, col2 = st.columns(2)
-    with col1:
-        st.subheader("¿Qué tan grande es?")
-        st.write(f"Filas: **{df.shape[0]}**")
-        st.write(f"Columnas: **{df.shape[1]}**")
-    with col2:
-        st.subheader("¿Qué tipos de datos hay?")
-        st.write(df.dtypes)
+col1, col2 = st.columns(2)
+with col1:
+    st.subheader("📏 Dimensiones")
+    st.metric("Total de Filas (registros)", f"{info['filas']:,}")
+    st.metric("Total de Columnas (variables)", info["columnas"])
+with col2:
+    st.subheader("🔢 Tipos de Datos")
+    dtypes_df = df.dtypes.rename("Tipo").to_frame()
+    dtypes_df.index = [rename_columns_for_display(pd.DataFrame(columns=[col_name])).columns[0] for col_name in dtypes_df.index]
+    st.dataframe(dtypes_df, use_container_width=True)
 
-    with st.expander("🧠 ¿Cómo interpretar la estructura?"):
-        st.write("""
-        - **Filas:** Representan la cantidad de 'eventos' o 'sujetos' registrados. Miles de filas sugieren un fenómeno masivo o de largo plazo.
-        - **Columnas:** Representan las 'características' medidas. Muchas columnas significan un análisis muy detallado.
-        - **Tipos (dtypes):**
-            - `int64` / `float64`: Son números. Permiten sumas y promedios.
-            - `object`: Generalmente es texto o categorías.
-            - `datetime64`: Fechas y horas (esencial para ver tendencias en el tiempo).
-        """)
+with st.expander("🧠 ¿Cómo interpreto la estructura?"):
+    st.write(
+        """
+        - **Filas**: Cada fila = un evento de ronda en una partida profesional de OWL.
+        - **`int64` / `float64`**: Columnas numéricas → permiten sumas, promedios.
+        - **`object`**: Texto o categorías → equipos, mapas, tipos de mapa.
+        - **`datetime64`**: Fechas → permiten análisis temporal por temporadas.
+        """
+    )
 
-    # --- Paso 3: Calidad y Vacíos ---
-    st.header("Step 3: | Calidad y Vacíos")
-    missing = df.isnull().sum()
-    if missing.sum() > 0:
-        st.write("Columnas con datos faltantes:")
-        st.write(missing[missing > 0])
-        st.write("Pregunta: ¿Por qué crees que faltan datos en esas columnas específicas?")
-    else:
-        st.success("¡Increíble! Este dataset está completo. No faltan datos.")
+st.divider()
 
-    with st.expander("🧠 ¿Qué significan los datos faltantes?"):
-        st.write("""
-        - **Nulos (NaN):** Indican información que no se recolectó o no aplica.
-        - **Impacto:** Si una columna importante (como 'Costo' o 'Fecha') tiene muchos nulos, tus conclusiones podrían ser poco confiables.
-        - **Sesgo:** Si los datos solo faltan para ciertos grupos, el análisis podría estar inclinado hacia un lado.
-        """)
+# ── STEP 3: Cardinalidad y Frecuencias ────────────────────────────────────
+st.header("🃏 Step 3: Cardinalidad — ¿Cuántos valores únicos hay?")
+st.markdown(
+    "Equivalente a `df['col'].nunique()`. "
+    "Muestra cuántos valores distintos existe en cada columna categórica."
+)
 
-    # --- Paso 4: El Corazón de los Datos ---
-    st.header("Step 4: El Corazón de los Datos (Estadísticas)")
-
-    tab1, tab2 = st.tabs(["Números (Cuantitativo)", "Categorías (Cualitativo)"])
-
-    with tab1:
-        st.write("Resumen estadístico de las columnas numéricas:")
-        st.dataframe(df.describe())
-
-        with st.expander("Guía de Estadísticas Numéricas"):
-            st.write("""
-            - **Mean (Promedio):** El valor central, ¿Es lo que esperabas para este tema?
-            - **Min / Max:** Los límites. Te ayudan a detectar 'outliers' (valores extraños o errores).
-            - **Std (Desviación):** Qué tan 'dispersos' están los datos. Un número alto significa mucha variedad.
-            - **50% (Mediana):** El punto medio exacto. Si es muy diferente al promedio, los datos están 'sesgados' hacia un extremo.
-            """)
-
-    with tab2:
-        cat_desc = df.describe(exclude=['number'])
-        if not cat_desc.empty:
-            st.write("Resumen de las columnas de texto/categorías:")
-            st.dataframe(cat_desc)
-
-            with st.expander("Guía de Estadísticas Categóricas"):
-                st.write("""
-                - **Unique:** Cuántas opciones diferentes hay (ej: 32 departamentos).
-                - **Top (Moda):** El valor que más se repite. ¡Suele ser la clave del dataset!
-                - **Freq:** Cuántas veces aparece el valor 'top'.
-                """)
-        else:
-            st.write("No se detectaron columnas categóricas.")
-
-    # --- Conclusiones de Investigación ---
-    st.header("Resumen de Hallazgos")
-
-    num_cols = df.select_dtypes(include=['number']).columns.tolist()
-    cat_cols = df.select_dtypes(exclude=['number']).columns.tolist()
-
-    st.markdown(f"""
-    ### 🕵️ Informe del Detective
-    Basado en tu investigación, aquí hay una validación de lo que has encontrado:
-
-    + **📏 Volumen**: Estas manejando **{df.shape[0]} registros**, lo que permite una visión **{'global' if df.shape[0] > 1000 else 'específica'}** del fenómeno.
-    + **🏷️ Variables**: El dataset contiene **{len(cat_cols)} llaves de texto** que definen el 'qué' y el 'dónde', y **{len(num_cols)} llaves numéricas** cuantificando el 'cuánto'.
-    + **📍 Contexto Sugerido**: Las columnas como '{", ".join(cat_cols[:3])}...' sugieren que estamos analizando un fenómeno relacionado con la gestión, reportes o eventos en un entorno específico.
-
-    
-    """)
-
+cat_cols = info["cols_categoricas"]
+if cat_cols:
+    nunique_series = df[cat_cols].nunique().sort_values(ascending=False)
+    nunique_df = nunique_series.reset_index()
+    nunique_df.columns = ["Columna", "Valores Únicos"]
+    nunique_df["Columna"] = nunique_df["Columna"].apply(lambda x: rename_columns_for_display(pd.DataFrame(columns=[x])).columns[0])
+    st.dataframe(nunique_df, use_container_width=True)
 else:
-    st.warning("No se pudo cargar el dataset.")
+    st.info("No se encontraron columnas categóricas.")
+
+st.markdown("---")
+st.subheader("🔁 Frecuencias — value_counts interactivo")
+st.markdown("Selecciona una columna para ver cuántas veces aparece cada valor.")
+
+# Renombrar las opciones del selectbox para la visualización
+display_cat_cols = [rename_columns_for_display(pd.DataFrame(columns=[c])).columns[0] for c in cat_cols] if cat_cols else []
+selected_display_col = st.selectbox(
+    "Columna para explorar frecuencias:",
+    options=display_cat_cols if display_cat_cols else [rename_columns_for_display(pd.DataFrame(columns=[c])).columns[0] for c in df.columns.tolist()],
+    index=0,
+)
+# Mapear de vuelta al nombre original de la columna para el dataframe
+original_cat_col_selector = cat_cols[display_cat_cols.index(selected_display_col)] if cat_cols else df.columns.tolist()[display_cat_cols.index(selected_display_col)]
+
+
+top_n = st.slider("Top N valores a mostrar:", min_value=5, max_value=30, value=15)
+
+vc = df[original_cat_col_selector].value_counts().head(top_n).reset_index()
+vc.columns = [selected_display_col, "Frecuencia"] # Use the display name for the column
+st.dataframe(vc, use_container_width=True)
+
+with st.expander("🧠 ¿Qué nos dice el value_counts?"):
+    st.write(
+        """
+        - **Valor más frecuente (Moda)**: El registro más común. En OWL, probablemente sea el mapa o equipo más jugado.
+        - **Valores raros** (frecuencia ≤ 5): Pueden indicar errores de captura o datos atípicos.
+        - **Distribución uniforme** (todos con frecuencia similar): Sugiere un torneo bien balanceado.
+        """
+    )
+
+st.divider()
+
+# ── STEP 4: Calidad — Valores Nulos ───────────────────────────────────────
+st.header("❗ Step 4: Calidad de Datos — Valores Nulos")
+
+missing = df.isnull().sum()
+missing_pct = (df.isnull().sum() / len(df) * 100).round(2)
+missing_df = pd.DataFrame({"Nulos": missing, "% del Total": missing_pct})
+missing_df = missing_df[missing_df["Nulos"] > 0].sort_values("Nulos", ascending=False)
+
+if not missing_df.empty:
+    st.warning(f"⚠️ Se encontraron **{len(missing_df)} columnas** con datos faltantes.")
+    # Renombrar índice para mostrar nombres en español
+    missing_df.index = [
+        rename_columns_for_display(pd.DataFrame(columns=[c])).columns[0]
+        for c in missing_df.index
+    ]
+    st.dataframe(missing_df, use_container_width=True)
+else:
+    st.success("✅ ¡Increíble! Este dataset está completo. No hay valores nulos.")
+
+with st.expander("🧠 ¿Qué significan los nulos?"):
+    st.write(
+        """
+        - **NaN**: Información no recolectada o que no aplica en ese evento.
+        - **Impacto**: Si `map_name` tiene muchos nulos, el análisis por mapa sería poco confiable.
+        - **Estrategia**: En la siguiente página veremos cómo limpiar estos registros.
+        """
+    )
+
+st.divider()
+
+# ── STEP 5: Estadísticas Descriptivas ────────────────────────────────────
+st.header("📊 Step 5: El Corazón de los Datos (Estadísticas)")
+
+tab_num, tab_cat = st.tabs(["🔢 Columnas Numéricas", "🏷️ Columnas Categóricas"])
+
+with tab_num:
+    st.write("Resumen estadístico de las variables cuantitativas:")
+    st.dataframe(df.describe().round(2), use_container_width=True)
+
+    with st.expander("Guía de Estadísticas Numéricas"):
+        st.write(
+            """
+            - **mean (Promedio)**: Valor central. ¿Es razonable para el contexto del juego?
+            - **min / max**: Detecta outliers o errores de captura.
+            - **std (Desviación estándar)**: Alta variabilidad = muchos tipos de ronda diferentes.
+            - **50% (Mediana)**: Si difiere mucho del promedio, los datos están sesgados.
+            """
+        )
+
+with tab_cat:
+    cat_desc = df.describe(exclude=["number"])
+    if not cat_desc.empty:
+        st.write("Resumen de columnas de texto / categorías:")
+        st.dataframe(cat_desc, use_container_width=True)
+
+        with st.expander("Guía de Estadísticas Categóricas"):
+            st.write(
+                """
+                - **unique**: Cuántas opciones distintas existen (ej: 20 equipos en OWL).
+                - **top (Moda)**: El valor que más se repite. ¡Suele ser la clave del dataset!
+                - **freq**: Cuántas veces aparece el valor `top`.
+                """
+            )
+    else:
+        st.info("No se detectaron columnas categóricas en el resumen.")
+
+st.divider()
+
+# ── Resumen del Detective ─────────────────────────────────────────────────
+st.header("🕵️ Informe del Detective — Resumen de Hallazgos")
+
+st.markdown(
+    f"""
+    Basado en tu investigación, aquí hay una validación de lo que descubriste:
+
+    | Aspecto | Hallazgo |
+    |---|---|
+    | 📏 **Volumen** | **{info['filas']:,} registros** — visión {'global (macrodataset)' if info['filas'] > 10_000 else 'específica'} del fenómeno |
+    | 🏷️ **Variables texto** | **{len(info['cols_categoricas'])} columnas** → definen el *qué* y el *dónde* |
+    | 🔢 **Variables numéricas** | **{len(info['cols_numericas'])} columnas** → cuantifican el *cuánto* |
+    | 🚨 **Calidad** | **{info['nulos_total']:,} nulos totales** en el dataset |
+    | 🗺️ **Contexto sugerido** | Columnas como `{'`, `'.join(info['cols_categoricas'][:3])}` sugieren análisis de eventos competitivos por mapa y equipo |
+    """
+)
