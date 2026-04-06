@@ -17,6 +17,7 @@ NUMERIC_COLS = [
     "match_id",
     "game_number",
     "round_number",
+     "stat_amount", 
 ]
 
 # Columna de tiempo que a veces tiene tipos mixtos
