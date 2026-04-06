@@ -1,4 +1,4 @@
-import streamlit as st
+from utils.visuals import load_custom_css, card
 
 # Configuración de la página
 st.set_page_config(
@@ -8,100 +8,83 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# --- Estilo Personalizado (Opcional) ---
-st.markdown("""
-<style>
-main {
-    background-color: #f8f9fa;
-}
+# Cargar Estilos Premium
+load_custom_css()
 
-.stAlert {
-    border-radius: 10px;
-}
-</style>
+# --- Hero Section Superior ---
+st.markdown("""
+<div class="hero-container">
+    <h1 class="hero-title">🚀 Proyecto Integrador: Analítica de Datos</h1>
+    <h3 style="color: #eef2f7;">Transformando Información en Decisiones Estratégicas</h3>
+    <p style="opacity: 0.8; font-size: 1.1rem; max-width: 800px; margin: 0 auto;">
+        Análisis avanzado de rendimiento competitivo en la <b>Overwatch League (OWL)</b> utilizando 
+        técnicas modernas de Ciencia de Datos aplicadas a eSports.
+    </p>
+</div>
 """, unsafe_allow_html=True)
 
-# --- Título Principal ---
-st.title("🚀 Proyecto Integrador: Analítica de Datos")
-st.subheader("Transformando Información en Decisiones Estratégicas")
-
 st.divider()
 
-# --- 1. Introducción ---
-col1, col2 = st.columns([2, 1])
+# --- 1. Introducción y Objetivos ---
+col_intro, col_obj = st.columns([1, 1], gap="large")
 
-with col1:
+with col_intro:
     st.header("📖 Introducción")
     st.write("""
-Este proyecto aplica técnicas de **Analítica de Datos** para desglosar el rendimiento competitivo en la **Overwatch League**.  
-A través de este tablero, exploramos métricas de eSports para identificar cómo los equipos profesionales gestionan sus recursos, tiempos de ejecución y estrategias por mapa nacional e internacional.
+    Este proyecto aplica técnicas de **Analítica de Datos** para desglosar el rendimiento competitivo en la **Overwatch League**.  
+    A través de este tablero, exploramos métricas de eSports para identificar cómo los equipos profesionales gestionan sus recursos, tiempos de ejecución y estrategias por mapa nacional e internacional.
+    """)
+    st.info("💡 **Dato clave:** En la analítica de eSports, la precisión en los tiempos de ronda puede definir la victoria o derrota de una temporada completa.")
 
-Nuestro enfoque utiliza la **Exploración de Datos (EDA)** para transformar registros técnicos de partidas en conocimiento estratégico sobre el "metajuego" profesional.
-""")
-
-with col2:
-    st.info("💡 **Dato:** En la analítica de eSports, la precisión en los tiempos de ronda puede definir la victoria o derrota de una temporada completa.")
-
-# --- 2. Objetivos ---
-st.header("🎯 Objetivos del Proyecto")
-
-obj_gen, obj_esp = st.columns(2)
-
-with obj_gen:
-    st.subheader("Objetivo General")
+with col_obj:
+    st.header("🎯 Objetivos")
     st.markdown("""
-- Implementar un sistema de análisis exploratorio interactivo que identifique patrones de rendimiento y eficiencia en las estadísticas competitivas de la Overwatch League.
-""")
-
-with obj_esp:
-    st.subheader("Objetivos Específicos")
-    st.markdown("""
-- Identificar anomalías en los registros técnicos de las partidas para asegurar la calidad de los datos de rendimiento.
-- Analizar la frecuencia y éxito de los mapas competitivos para descifrar las tendencias de la liga.
-- Utilizar estadísticas descriptivas para comparar métricas clave de jugadores y equipos.
-- Evaluar la consistencia de los tiempos de ronda como indicador de equilibrio competitivo.
-""")
+    *   **General:** Implementar un sistema de análisis exploratorio interactivo que identifique patrones de rendimiento y eficiencia en las estadísticas competitivas de la OWL.
+    *   **Específicos:**
+        *   Detectar anomalías y asegurar la calidad de datos.
+        *   Analizar tendencias de mapas y "metajuego".
+        *   Comparar métricas clave por equipo y jugador.
+    """)
 
 st.divider()
 
-# --- 3. Equipo de Trabajo ---
-st.header("👥 Equipo de Trabajo (Integrantes)")
+# --- 3. Equipo de Trabajo (Integrantes) ---
+st.header("👥 Equipo de Desarrollo")
 
-# Puedes ajustar los nombres aquí
 integrantes = [
-    {"nombre": "Juan Pablo Blandon Barbosa", "rol": "Analista de Datos", "emoji": "🧑‍💻"},
-    {"nombre": "Juan Ricardo Oquendo Alzate", "rol": "Ingeniero de Datos", "emoji": "👨‍💻"},
-    {"nombre": "Thomas Echeverry Rios", "rol": "Arquitecto de Soluciones", "emoji": "👨‍🔬"},
-    {"nombre": "Santiago Velez Gutierrez", "rol": "Especialista en Front-End", "emoji": "👨‍🔬"},
+    {"nombre": "Blandon Barbosa, Juan Pablo", "rol": "Data Scientist", "emoji": "👨‍🔬"},
+    {"nombre": "Oquendo Alzate, Juan Ricardo", "rol": "Engineer", "emoji": "👨‍💻"},
+    {"nombre": "Echeverry Rios, Thomas", "rol": "Architect", "emoji": "📐"},
+    {"nombre": "Velez Gutierrez, Santiago", "rol": "Front-End", "emoji": "🎨"},
 ]
 
-cols = st.columns(len(integrantes))
+cols_team = st.columns(len(integrantes))
 
 for i, persona in enumerate(integrantes):
-    with cols[i]:
+    with cols_team[i]:
         st.markdown(f"""
-### {persona['emoji']} {persona['nombre']}
-**Rol:** {persona['rol']}
-""")
+        <div style="background: white; padding: 1.5rem; border-radius: 15px; border-bottom: 4px solid #0072ff; box-shadow: 0 4px 15px rgba(0,0,0,0.05); text-align: center;">
+            <div style="font-size: 3rem; margin-bottom: 0.5rem;">{persona['emoji']}</div>
+            <h4 style="margin: 5px 0;">{persona['nombre'].split(',')[0]}</h4>
+            <p style="color: #666; font-size: 0.85rem; font-weight: bold; text-transform: uppercase; margin: 0;">{persona['rol']}</p>
+        </div>
+        """, unsafe_allow_html=True)
 
 st.divider()
 
-# --- 4. Tecnologías Utilizadas ---
-st.header("🛠 Tecnologías")
+# --- 4. Tecnologías ---
+st.header("🛠 Ecosistema Tecnológico")
 
-tech_col1, tech_col2, tech_col3 = st.columns(3)
+t1, t2, t3 = st.columns(3)
 
-with tech_col1:
-    st.markdown("### 🐍 Python")
-    st.write("Lenguaje base para el procesamiento y lógica del proyecto.")
+with t1:
+    card("Python 🐍", "Lenguaje base para el procesamiento y lógica robusta del proyecto.", "🐍")
 
-with tech_col2:
-    st.markdown("### 🐼 Pandas")
-    st.write("Librería líder para manipulación y análisis de estructuras de datos.")
+with t2:
+    card("Pandas 🐼", "Librería líder para manipulación de DataFrames y limpieza masiva.", "🐼")
 
-with tech_col3:
-    st.markdown("### 📊 Streamlit")
-    st.write("Framework para la creación de aplicaciones web interactivas de datos.")
+with t3:
+    card("Streamlit 🔥", "Framework de vanguardia para desplegar dashboards interactivos velozmente.", "📊")
 
 # --- Pie de página ---
 st.sidebar.success("💡 Usa el menú lateral para navegar entre las secciones del proyecto.")
