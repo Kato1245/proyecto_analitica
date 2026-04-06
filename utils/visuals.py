@@ -16,7 +16,7 @@ def load_custom_css():
 
     /* Fondo principal con sutil gradiente */
     .stApp {
-        background: linear_gradient(135deg, #f8f9fc 0%, #eef2f7 100%);
+        background: linear-gradient(135deg, #f8f9fc 0%, #eef2f7 100%);
     }
 
     /* Estilo de Tarjetas (Cards) */

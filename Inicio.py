@@ -1,3 +1,4 @@
+import streamlit as st
 from utils.visuals import load_custom_css, card
 
 # Configuración de la página
@@ -52,10 +53,10 @@ st.divider()
 st.header("👥 Equipo de Desarrollo")
 
 integrantes = [
-    {"nombre": "Blandon Barbosa, Juan Pablo", "rol": "Data Scientist", "emoji": "👨‍🔬"},
-    {"nombre": "Oquendo Alzate, Juan Ricardo", "rol": "Engineer", "emoji": "👨‍💻"},
-    {"nombre": "Echeverry Rios, Thomas", "rol": "Architect", "emoji": "📐"},
-    {"nombre": "Velez Gutierrez, Santiago", "rol": "Front-End", "emoji": "🎨"},
+    {"nombre": "Juan Pablo Blandon Barbosa", "rol": "Data Scientist", "emoji": "👨‍🔬"},
+    {"nombre": "Juan Ricardo Oquendo Alzate", "rol": "Engineer", "emoji": "👨‍💻"},
+    {"nombre": "Thomas Echeverry Rios", "rol": "Architect", "emoji": "📐"},
+    {"nombre": "Santiago Velez Gutierrez", "rol": "Front-End", "emoji": "🎨"},
 ]
 
 cols_team = st.columns(len(integrantes))

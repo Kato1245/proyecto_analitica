@@ -73,11 +73,13 @@ st.divider()
 # ─────────────────────────────────────────────────────────────────────────────
 # SECCIÓN 2: Panel de Filtros Interactivos
 # ─────────────────────────────────────────────────────────────────────────────
+df_trabajo = df_features.copy()
+tipos_sel = [] # Inicializar para evitar NameError
+
 with st.sidebar:
     st.header("⚙️ Configuración")
     st.markdown("Ajusta los parámetros para el análisis dinámico.")
     
-    df_trabajo = df_features.copy()
 
     # Filtro: Tipo de mapa
     if "map_type" in df_trabajo.columns:
@@ -107,7 +109,7 @@ with tab_t:
     if res_tipo is not None:
         c1, c2 = st.columns([1, 2])
         with c1:
-            st.dataframe(rename_columns_for_display(res_tipo), use_container_width=True)
+            st.dataframe(rename_columns_for_display(res_tipo), width="stretch")
         with c2:
             st.bar_chart(res_tipo["Total_Rondas"])
     else:
@@ -118,13 +120,13 @@ with tab_m:
     if res_mapa is not None:
         st.markdown("### Frecuencia de Selección de Mapas")
         st.bar_chart(res_mapa["Total_Rondas"], color="#d4af37") # Color dorado OWL
-        st.dataframe(rename_columns_for_display(res_mapa.T), use_container_width=True)
+        st.dataframe(rename_columns_for_display(res_mapa.T), width="stretch")
 
 with tab_e:
     res_equipo = groupby_team(df_trabajo)
     if res_equipo is not None:
         st.markdown("### Top Equipos por Rondas Jugadas")
-        st.dataframe(rename_columns_for_display(res_equipo), use_container_width=True)
+        st.dataframe(rename_columns_for_display(res_equipo), width="stretch")
         st.bar_chart(res_equipo["Total_Rondas"])
 
 st.divider()
@@ -165,5 +167,5 @@ with col_rep2:
         "📥 Descargar Reporte (.md)",
         data=reporte_txt,
         file_name="reporte_owl_premium.md",
-        use_container_width=True
+        width="stretch"
     )
