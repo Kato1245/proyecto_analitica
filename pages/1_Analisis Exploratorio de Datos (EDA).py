@@ -69,7 +69,10 @@ st.markdown("Observa las **primeras 10 filas**. ¿Qué conceptos o palabras clav
 
 # Contenedor con borde para el dataframe
 with st.container():
-    st.dataframe(rename_columns_for_display(df.head(10)), use_container_width=True)
+    df_preview = df.head(10).copy()
+    if "round_start_time" in df_preview.columns:
+        df_preview["round_start_time"] = df_preview["round_start_time"].astype(str)
+    st.dataframe(rename_columns_for_display(df_preview), width="stretch")
 
 with st.expander("🧠 ¿Cómo interpreto este paso?"):
     st.write(
@@ -105,8 +108,9 @@ with c1:
 with c2:
     st.subheader("🔢 Tipos de Datos")
     dtypes_df = df.dtypes.rename("Tipo").to_frame()
+    dtypes_df["Tipo"] = dtypes_df["Tipo"].astype(str) # Fix PyArrow error
     dtypes_df.index = [rename_columns_for_display(pd.DataFrame(columns=[col_name])).columns[0] for col_name in dtypes_df.index]
-    st.dataframe(dtypes_df, use_container_width=True, height=250)
+    st.dataframe(dtypes_df, width="stretch", height=250)
 
 st.divider()
 
@@ -123,7 +127,7 @@ with col_card:
         nunique_df = nunique_series.reset_index()
         nunique_df.columns = ["Columna", "Uni"]
         nunique_df["Columna"] = nunique_df["Columna"].apply(lambda x: rename_columns_for_display(pd.DataFrame(columns=[x])).columns[0])
-        st.dataframe(nunique_df, use_container_width=True)
+        st.dataframe(nunique_df, width="stretch")
 
 with col_freq:
     st.subheader("Distribución de Valores")
@@ -139,7 +143,7 @@ with col_freq:
         top_n = st.slider("Mostrar Top:", 5, 20, 10)
         vc = df[original_cat_col_selector].value_counts().head(top_n).reset_index()
         vc.columns = [selected_display_col, "Cantidad"]
-        st.dataframe(vc, use_container_width=True)
+        st.dataframe(vc, width="stretch")
     else:
         st.info("No hay columnas categóricas para mostrar.")
 
@@ -156,7 +160,7 @@ missing_df = missing_df[missing_df["Nulos"] > 0].sort_values("Nulos", ascending=
 if not missing_df.empty:
     st.warning(f"Se detectaron huecos de información en **{len(missing_df)} columnas**.")
     missing_df.index = [rename_columns_for_display(pd.DataFrame(columns=[c])).columns[0] for c in missing_df.index]
-    st.dataframe(missing_df, use_container_width=True)
+    st.dataframe(missing_df, width="stretch")
 else:
     st.success("✅ Dataset íntegro: No se detectaron valores nulos.")
 
@@ -168,12 +172,12 @@ st.header("📊 Step 5: Análisis Descriptivo")
 tab1, tab2 = st.tabs(["🔢 Numérico", "🏷️ Categórico"])
 
 with tab1:
-    st.dataframe(df.describe().round(2), use_container_width=True)
+    st.dataframe(df.describe().round(2), width="stretch")
 
 with tab2:
     cat_desc = df.describe(exclude=["number"])
     if not cat_desc.empty:
-        st.dataframe(cat_desc, use_container_width=True)
+        st.dataframe(cat_desc, width="stretch")
     else:
         st.info("Resumen categórico no disponible.")
 
