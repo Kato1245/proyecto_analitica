@@ -153,3 +153,5 @@ def get_value_counts(df: pd.DataFrame, col: str, top_n: int = 15) -> pd.DataFram
     )
     result.columns = [col, "Frecuencia"]
     return result
+
+#eso es todo
