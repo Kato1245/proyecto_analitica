@@ -2,19 +2,10 @@
 2_Resultados (EDA).py
 ======================
 Página 2 del proyecto multipágina: "Resultados del EDA"
-
-Responsabilidades (según plan):
-  - Limpieza de datos via utils/preprocessing.py (drop_duplicates, tipos, nulos)
-  - Feature engineering via utils/analysis.py (métricas derivadas)
-  - Agrupaciones groupby (por mapa, tipo de mapa, equipo)
-  - Filtros interactivos en sidebar (multiselect + slider)
-  - Visualizaciones st.bar_chart
-  - Generación y descarga de reporte .md
 """
 
 import sys
 import os
-
 import streamlit as st
 import pandas as pd
 
@@ -30,8 +21,8 @@ from utils.analysis import (
     groupby_map_type,
     groupby_map_name,
     groupby_team,
-    get_value_counts,
 )
+from utils.visuals import load_custom_css, card
 
 # ── Configuración de página ────────────────────────────────────────────────
 st.set_page_config(
@@ -40,240 +31,139 @@ st.set_page_config(
     layout="wide",
 )
 
+# Cargar Estilos Premium
+load_custom_css()
+
 st.title("📊 Resultados del EDA — Análisis Procesado")
 st.markdown(
     """
     En esta página aplicamos el **pipeline completo** de transformación:
     limpieza → feature engineering → agrupaciones → visualizaciones.
-    Usa la barra lateral para filtrar los datos de forma interactiva.
     """
 )
 
-# ── Carga de datos (reutiliza caché de la Página 1) ───────────────────────
+# ── Carga de datos ─────────────────────────────────────────────────────────
 df_raw = load_owl_data()
 
 if df_raw is None:
-    st.warning("⚠️ No se pudo cargar el dataset. Verifica tu conexión o la instalación de kagglehub.")
+    st.error("⚠️ Error crítico: No se pudo cargar el dataset.")
     st.stop()
 
 # ─────────────────────────────────────────────────────────────────────────────
-# SECCIÓN 1: Motor de Limpieza
-# Patrón de app.py: drop_duplicates → to_numeric → fillna
+# SECCIÓN 1: Motor de Limpieza (Pipeline)
 # ─────────────────────────────────────────────────────────────────────────────
+st.header("🛠️ 1. Procesamiento de Datos")
+
+with st.status("🚀 Ejecutando Pipeline de Limpieza...", expanded=True) as status:
+    df_clean, reporte_limpieza = run_full_pipeline(df_raw)
+    df_features = compute_round_metrics(df_clean)
+    status.update(label="✅ Pipeline completado con éxito.", state="complete", expanded=False)
+
+# Métricas visuales del proceso
+cl1, cl2, cl3 = st.columns(3)
+with cl1:
+    st.metric("Filas Originales", f"{len(df_raw):,}")
+with cl2:
+    st.metric("Duplicados Removidos", reporte_limpieza["duplicados_eliminados"])
+with cl3:
+    st.metric("Nulos Corregidos", f"{reporte_limpieza['nulos_rellenados']:,}")
+
 st.divider()
-st.header("🛠️ 1. Motor de Limpieza")
-st.markdown(
-    "Ejecutamos el pipeline de limpieza sobre los datos crudos. "
-    "Cada función vive en `utils/preprocessing.py` para ser reutilizable."
-)
-
-df_clean, reporte_limpieza = run_full_pipeline(df_raw)
-
-col_r1, col_r2, col_r3 = st.columns(3)
-with col_r1:
-    st.metric("📋 Filas originales", f"{len(df_raw):,}")
-with col_r2:
-    st.metric("🗑️ Duplicados eliminados", reporte_limpieza["duplicados_eliminados"])
-with col_r3:
-    st.metric("🔧 Nulos rellenados", f"{reporte_limpieza['nulos_rellenados']:,}")
-
-st.success(
-    "✅ **Pipeline ejecutado:** Duplicados removidos → tipos corregidos → nulos rellenados."
-)
-
-with st.expander("Vista del dataset limpio (primeras 10 filas)"):
-    st.dataframe(rename_columns_for_display(df_clean.head(10)), use_container_width=True)
 
 # ─────────────────────────────────────────────────────────────────────────────
-# SECCIÓN 2: Feature Engineering
-# Patrón de app.py: df['Ingreso_Bruto'] = df['precio'] * df['cantidad']
+# SECCIÓN 2: Panel de Filtros Interactivos
 # ─────────────────────────────────────────────────────────────────────────────
-st.divider()
-st.header("✨ 2. Feature Engineering — Métricas Derivadas")
-st.markdown(
-    """
-    Creamos nuevas columnas a partir de las existentes, igual que `Ingreso_Bruto` en el proyecto anterior.
-    Aquí las métricas son específicas del contexto OWL.
-    """
-)
+with st.sidebar:
+    st.header("⚙️ Configuración")
+    st.markdown("Ajusta los parámetros para el análisis dinámico.")
+    
+    df_trabajo = df_features.copy()
 
-df_features = compute_round_metrics(df_clean)
+    # Filtro: Tipo de mapa
+    if "map_type" in df_trabajo.columns:
+        tipos = df_trabajo["map_type"].dropna().unique().tolist()
+        tipos_sel = st.multiselect("Tipos de Mapa:", tipos, default=tipos)
+        df_trabajo = df_trabajo[df_trabajo["map_type"].isin(tipos_sel)]
 
-nuevas_cols = [c for c in ["Ronda_Extendida", "Mes_Partida"] if c in df_features.columns]
+    # Filtro: Match ID (Slider)
+    if "match_id" in df_trabajo.columns:
+        id_min, id_max = int(df_trabajo["match_id"].min()), int(df_trabajo["match_id"].max())
+        if id_min < id_max:
+            range_sel = st.sidebar.slider("Match ID:", id_min, id_max, (id_min, id_max))
+            df_trabajo = df_trabajo[df_trabajo["match_id"].between(range_sel[0], range_sel[1])]
 
-if nuevas_cols:
-    st.write(f"**Nuevas columnas creadas:** `{'`, `'.join(nuevas_cols)}`")
-
-    cols_mostrar = (
-        [c for c in ["map_name", "map_type", "attacker_payload_distance"] if c in df_features.columns]
-        + nuevas_cols
-    )
-    st.dataframe(rename_columns_for_display(df_features[cols_mostrar].head(10)), use_container_width=True)
-
-    if "Ronda_Extendida" in df_features.columns:
-        n_extendidas = df_features["Ronda_Extendida"].sum()
-        pct = round(n_extendidas / len(df_features) * 100, 1)
-        st.info(
-            f"📌 **Rondas Extendidas (Overtime):** {n_extendidas:,} de {len(df_features):,} "
-            f"registros ({pct}%) superaron el percentil 90 de `attacker_payload_distance`."
-        )
-else:
-    st.info(
-        "Las columnas necesarias para las métricas derivadas no están disponibles en este dataset. "
-        "Se continúa con el análisis de agrupaciones."
-    )
+    st.divider()
+    st.info(f"📊 **{len(df_trabajo):,}** registros activos.")
 
 # ─────────────────────────────────────────────────────────────────────────────
-# SECCIÓN 3: Filtros Interactivos en Sidebar
-# Patrón de app.py: st.sidebar.multiselect + st.sidebar.slider
+# SECCIÓN 3: Visualizaciones e Insights
 # ─────────────────────────────────────────────────────────────────────────────
-st.sidebar.header("⚙️ Panel de Filtros")
-st.sidebar.markdown("Ajusta los filtros para segmentar el análisis.")
+st.header("📈 2. Análisis e Insights Visuales")
 
-df_trabajo = df_features.copy()
+tab_t, tab_m, tab_e = st.tabs(["🗺️ Tipo de Mapa", "📍 Top Mapas", "🛡️ Equipos"])
 
-# Filtro 1: Tipo de mapa (multiselect)
-if "map_type" in df_trabajo.columns:
-    tipos_disponibles = df_trabajo["map_type"].dropna().unique().tolist()
-    tipos_seleccionados = st.sidebar.multiselect(
-        "Filtrar por Tipo de Mapa:",
-        options=tipos_disponibles,
-        default=tipos_disponibles,
-    )
-    df_trabajo = df_trabajo[df_trabajo["map_type"].isin(tipos_seleccionados)]
-
-# Filtro 2: Match ID mínimo (slider)
-if "match_id" in df_trabajo.columns:
-    id_min = int(df_trabajo["match_id"].min())
-    id_max = int(df_trabajo["match_id"].max())
-    if id_min < id_max:
-        match_slice = st.sidebar.slider(
-            "Rango de Match ID:",
-            min_value=id_min,
-            max_value=id_max,
-            value=(id_min, id_max),
-        )
-        df_trabajo = df_trabajo[
-            df_trabajo["match_id"].between(match_slice[0], match_slice[1])
-        ]
-
-st.sidebar.markdown("---")
-st.sidebar.info(f"📌 **{len(df_trabajo):,}** registros activos con los filtros aplicados.")
-st.sidebar.write("© 2026 - Proyecto Integrador de Analítica")
-
-# ─────────────────────────────────────────────────────────────────────────────
-# SECCIÓN 4: Análisis Agregado — groupby
-# Patrón de app.py: df.groupby('tipo')['Ingreso_Bruto'].agg(['sum','count','mean'])
-# ─────────────────────────────────────────────────────────────────────────────
-st.divider()
-st.header("📈 3. Análisis Agregado (groupby)")
-
-tab_tipo, tab_mapa, tab_equipo = st.tabs(
-    ["Por Tipo de Mapa", "Top Mapas", "Por Equipo"]
-)
-
-with tab_tipo:
-    resumen_tipo = groupby_map_type(df_trabajo)
-    if resumen_tipo is not None and not resumen_tipo.empty:
-        st.write("Rondas totales agrupadas por **tipo de mapa**:")
-        st.dataframe(rename_columns_for_display(resumen_tipo), use_container_width=True)
-        st.markdown("**Distribución visual (Total de Rondas por Tipo):**")
-        st.bar_chart(resumen_tipo["Total_Rondas"])
+with tab_t:
+    res_tipo = groupby_map_type(df_trabajo)
+    if res_tipo is not None:
+        c1, c2 = st.columns([1, 2])
+        with c1:
+            st.dataframe(rename_columns_for_display(res_tipo), use_container_width=True)
+        with c2:
+            st.bar_chart(res_tipo["Total_Rondas"])
     else:
-        st.info("La columna `map_type` no está disponible o el filtro devolvió 0 resultados.")
+        st.info("Datos de tipo de mapa no disponibles.")
 
-with tab_mapa:
-    resumen_mapa = groupby_map_name(df_trabajo)
-    if resumen_mapa is not None and not resumen_mapa.empty:
-        st.write("**Top 15 mapas más jugados:**")
-        st.dataframe(rename_columns_for_display(resumen_mapa), use_container_width=True)
-        st.bar_chart(resumen_mapa["Total_Rondas"])
-    else:
-        st.info("La columna `map_name` no está disponible.")
+with tab_m:
+    res_mapa = groupby_map_name(df_trabajo)
+    if res_mapa is not None:
+        st.markdown("### Frecuencia de Selección de Mapas")
+        st.bar_chart(res_mapa["Total_Rondas"], color="#d4af37") # Color dorado OWL
+        st.dataframe(rename_columns_for_display(res_mapa.T), use_container_width=True)
 
-with tab_equipo:
-    resumen_equipo = groupby_team(df_trabajo)
-    if resumen_equipo is not None and not resumen_equipo.empty:
-        st.write("**Top 15 equipos con más rondas jugadas:**")
-        st.dataframe(rename_columns_for_display(resumen_equipo), use_container_width=True)
-        st.bar_chart(resumen_equipo["Total_Rondas"])
-    else:
-        st.info(
-            "No se encontró columna de equipo (`attacker_name`, `team_name`, `attacker_team_name`)."
-        )
+with tab_e:
+    res_equipo = groupby_team(df_trabajo)
+    if res_equipo is not None:
+        st.markdown("### Top Equipos por Rondas Jugadas")
+        st.dataframe(rename_columns_for_display(res_equipo), use_container_width=True)
+        st.bar_chart(res_equipo["Total_Rondas"])
 
-# ─────────────────────────────────────────────────────────────────────────────
-# SECCIÓN 5: Tabla de Datos Filtrados
-# Patrón de app.py: st.table(df_final) debajo de los filtros
-# ─────────────────────────────────────────────────────────────────────────────
 st.divider()
-st.header("📋 4. Pedidos Filtrados — Vista Detallada")
-
-cols_vista = [c for c in ["map_name", "map_type", "match_id", "game_number"] if c in df_trabajo.columns]
-if cols_vista:
-    st.dataframe(rename_columns_for_display(df_trabajo[cols_vista].head(50)), use_container_width=True)
-    st.caption(f"Mostrando las primeras 50 filas de {len(df_trabajo):,} registros filtrados.")
-else:
-    st.dataframe(rename_columns_for_display(df_trabajo.head(50)), use_container_width=True)
 
 # ─────────────────────────────────────────────────────────────────────────────
-# SECCIÓN 6: Generación de Reporte (legado de la plantilla original)
+# SECCIÓN 4: Reporte Dinámico
 # ─────────────────────────────────────────────────────────────────────────────
-st.divider()
-st.header("📝 5. Generación de Reporte")
+st.header("📝 3. Generador de Reporte Ejecutivo")
 
-n_tipos = df_trabajo["map_type"].nunique() if "map_type" in df_trabajo.columns else "N/A"
-n_mapas = df_trabajo["map_name"].nunique() if "map_name" in df_trabajo.columns else "N/A"
+# Datos para el reporte
+n_mapas = df_trabajo["map_name"].nunique() if "map_name" in df_trabajo.columns else 0
+n_tot = len(df_trabajo)
 
-contexto = (
-    "El dataset 'Overwatch League Stats Lab' recopila información detallada sobre partidas competitivas "
-    "de Overwatch a nivel profesional, incluyendo métricas de rendimiento por ronda, tiempos de inicio "
-    "y estadísticas por mapa."
-)
-calidad = (
-    f"Después de la limpieza: {reporte_limpieza['duplicados_eliminados']} duplicados eliminados y "
-    f"{reporte_limpieza['nulos_rellenados']:,} nulos rellenados. "
-    "Se corrigieron tipos mixtos en columnas numéricas y temporales."
-)
-estadisticas = (
-    f"Con los filtros actuales: {len(df_trabajo):,} registros, {n_tipos} tipos de mapa, "
-    f"{n_mapas} mapas únicos. Se identificaron rondas extendidas (overtime) como métrica derivada clave."
-)
-conclusion = (
-    "El análisis revela que la analítica en eSports permite identificar patrones de balance competitivo. "
-    "Los mapas de tipo 'Control' muestran mayor frecuencia de rondas extendidas. "
-    "Estos datos son fundamentales para la toma de decisiones basada en evidencia."
-)
+reporte_txt = f"""# Reporte de Análisis OWL
+**Volumen Procesado:** {n_tot:,} registros.
+**Mapas Únicos:** {n_mapas}.
 
-if st.button("🚀 Generar Previsualización del Reporte"):
-    st.success("✅ Reporte generado exitosamente.")
-
-    reporte_md = f"""# Reporte de Análisis Exploratorio de Datos
-**Dataset**: Overwatch League Stats Lab  
-**Generado por**: Proyecto Integrador de Analítica — 2026
-
----
-
-## 1. Identificación y Contexto
-{contexto}
-
-## 2. Calidad de los Datos
-{calidad}
-
-## 3. Hallazgos Estadísticos Clave
-{estadisticas}
-
-## 4. Conclusión Final
-{conclusion}
-
----
-*Generado por el módulo de Reportes — Proyecto Integrador*
+## Conclusión
+El análisis muestra una alta consistencia en los datos tras el pipeline. 
+Se recomienda profundizar en las estrategias de los equipos en mapas de tipo '{tipos_sel[0] if tipos_sel else 'N/A'}'.
 """
 
-    st.markdown(reporte_md)
+col_rep1, col_rep2 = st.columns([2, 1])
+
+with col_rep1:
+    st.markdown("""
+    <div style="background: #f1f3f4; padding: 2rem; border-radius: 15px; border-left: 10px solid #0072ff;">
+        <h3>Previsualización del Reporte</h3>
+        <p>El reporte se genera basándose en los filtros actuales de la barra lateral.</p>
+    </div>
+    """, unsafe_allow_html=True)
+    if st.checkbox("Ver contenido del reporte"):
+        st.markdown(reporte_txt)
+
+with col_rep2:
+    st.markdown("<br><br>", unsafe_allow_html=True)
     st.download_button(
-        label="📥 Descargar Reporte (.md)",
-        data=reporte_md,
-        file_name="reporte_eda_owl.md",
-        mime="text/markdown",
+        "📥 Descargar Reporte (.md)",
+        data=reporte_txt,
+        file_name="reporte_owl_premium.md",
+        use_container_width=True
     )
